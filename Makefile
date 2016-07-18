@@ -1,20 +1,39 @@
-all: test
+all: libsnappy.a_64 libleveldb.a_64 libsnappy.a_32 libleveldb.a_32
 
-libsnappy.a: snappy/*cc snappy/*h
-	cd snappy && mkdir -p build && ./autogen.sh && ./configure --prefix=`pwd`/build/ && $(MAKE) && $(MAKE) install
+libsnappy.a_32:
+	CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 make libsnappy.a
+	mv libsnappy.a libsnappy.a_32
+
+libsnappy.a_64:
+	CFLAGS='-m64 -fPIC' CXXFLAGS='-m64 -fPIC' LDFLAGS=-m64 make libsnappy.a
+	mv libsnappy.a libsnappy.a_64
+
+libsnappy.a:
+	cd snappy && \
+	mkdir -p build && \
+	./autogen.sh && \
+	./configure --without-gtest --disable-shared --prefix=`pwd`/build/ && \
+	$(MAKE) clean && \
+	$(MAKE) && \
+	$(MAKE) install
 	cp snappy/build/lib/libsnappy.a ./
 
-libleveldb.a: leveldb/include/leveldb/*.h leveldb/db/*.c leveldb/db/*.cc leveldb/db/*.h
-	cd leveldb && $(MAKE) libleveldb.a
-	cp leveldb/libleveldb.a ./
+libleveldb.a_32:
+	CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 make libleveldb.a
+	mv libleveldb.a libleveldb.a_32
 
-test: libsnappy.a libleveldb.a
-	g++ -pthread -Ileveldb/include test.cpp -o test -L. -lleveldb -lsnappy
+libleveldb.a_64:
+	CFLAGS='-m64 -fPIC' CXXFLAGS='-m64 -fPIC' LDFLAGS=-m64 make libleveldb.a
+	mv libleveldb.a libleveldb.a_64
+
+libleveldb.a:
+	cd leveldb && $(MAKE) clean && $(MAKE) libleveldb.a
+	cp leveldb/libleveldb.a ./
 
 .PHONY: clean
 
 clean:
 	cd snappy && rm -rf build && rm -f libsnappy.a
-	rm libsnappy.a
+	rm -f libsnappy.a*
 	cd leveldb && make clean
-	rm libleveldb.a
+	rm -f libleveldb.a*
